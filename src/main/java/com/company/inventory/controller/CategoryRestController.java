@@ -24,7 +24,7 @@ public class CategoryRestController {
         return response;
     }
 
-    //get categories by id parametrizado
+    //get categories by id parametrizados
     @GetMapping("/categories/{id}")
     public ResponseEntity<CategoryResponseRest> searchById(@PathVariable Long id){
         ResponseEntity<CategoryResponseRest> response = service.searchById(id);
