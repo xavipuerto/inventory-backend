@@ -204,4 +204,11 @@ public class ProductServiceImpl implements IProductService {
 
         return new ResponseEntity<ProductResponseRest>(response, HttpStatus.OK);
     }
+
+    @Override
+    public ResponseEntity<ProductResponseRest> update(Product product, Long categoryId, Long id) {
+
+
+        return null;
+    }
 }
