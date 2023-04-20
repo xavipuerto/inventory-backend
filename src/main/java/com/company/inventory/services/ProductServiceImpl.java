@@ -5,6 +5,7 @@ import com.company.inventory.dao.IProductDao;
 import com.company.inventory.model.Category;
 import com.company.inventory.model.Product;
 import com.company.inventory.response.ProductResponseRest;
+import com.company.inventory.response.ResponseRest;
 import com.company.inventory.util.Util;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -103,6 +104,50 @@ public class ProductServiceImpl implements IProductService {
             response.setMetadata("Respuesta KO", "-1", "Producto no guardado. Error");
             return new ResponseEntity<ProductResponseRest>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+        return new ResponseEntity<ProductResponseRest>(response, HttpStatus.OK);
+    }
+
+    @Override
+    @Transactional (readOnly = true)
+    public ResponseEntity<ProductResponseRest> searchByName(String name) {
+
+        ProductResponseRest response = new ProductResponseRest();
+        List<Product> list = new ArrayList<>();
+        List<Product> listAux = new ArrayList<>();
+
+        try {
+            //puedo usar cualquier que hemos definido en IProductService.java --> IProductDao.java
+            //listaux = productDao.findByName(name);
+            listAux = productDao.findByNameContaining(name);
+
+            if (listAux.size() > 0){
+            //if(!listAux.isEmpty()){
+
+                //voy a recorrer la listaux para descomprimir cada una de las imagenes
+                //lo de (p) -> { .... es una función Lambda
+                listAux.stream().forEach( (p) -> {
+                    //aqui descomprimimos
+                    byte[] imageDescompressed = Util.decompressZLib(p.getPicture());
+                    p.setPicture(imageDescompressed);
+                    //list es la lista que voy a mandar hacia fuera
+                    list.add(p);
+                } );
+
+                //en el response mandamos la lista de producto(s)
+                response.getProduct().setProducts(list);
+                response.setMetadata("Respuesta OK", "00", "Productos encontrados");
+
+            }else{
+                response.setMetadata("respuesta KO", "00", "Productos no encontrados");
+                return new ResponseEntity<ProductResponseRest>(response, HttpStatus.NOT_FOUND);
+            }
+
+        }catch (Exception e){
+            e.getStackTrace();
+            response.setMetadata("Respuesta KO", "-1", "Error al buscar producto por nombre");
+            return new ResponseEntity<ProductResponseRest>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
         return new ResponseEntity<ProductResponseRest>(response, HttpStatus.OK);
     }
 }
