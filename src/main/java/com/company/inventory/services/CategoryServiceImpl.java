@@ -9,7 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class CategoryServiceImpl implements ICategoryService{
@@ -42,4 +44,117 @@ public class CategoryServiceImpl implements ICategoryService{
 
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<CategoryResponseRest> searchById(Long id) {
+
+        CategoryResponseRest response = new CategoryResponseRest();
+        List<Category> list = new ArrayList<>();
+
+        try{
+
+            Optional<Category> category = categoryDao.findById(id);
+
+            if (category.isPresent()){
+                list.add(category.get());
+                response.getCategoryResponse().setCategory(list);
+            }else{
+                response.setMetadata("Respuesta KO", "-1", "Categoria no encontrada");
+                return new ResponseEntity<CategoryResponseRest>(response, HttpStatus.NOT_FOUND);
+            }
+
+        }catch (Exception e){
+
+            response.setMetadata("Respuesta KO", "-1", "Error al consultar por ID");
+            e.getStackTrace();
+            return new ResponseEntity<CategoryResponseRest>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        return new ResponseEntity<CategoryResponseRest>(response, HttpStatus.OK);
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<CategoryResponseRest> save(Category category) {
+
+        CategoryResponseRest response = new CategoryResponseRest();
+        List<Category> list = new ArrayList<>();
+
+        try {
+            Category categorySaved = categoryDao.save(category);
+            //si es distinto de null es que se ha guardado correctamente
+            if (categorySaved != null){
+                list.add(categorySaved);
+                response.getCategoryResponse().setCategory(list);
+                response.setMetadata("Respuesta OK", "00", "Categoria guardada");
+            }else{
+                response.setMetadata("Respuesta KO", "-1", "Categoria no guardada");
+                return new ResponseEntity<CategoryResponseRest>(response, HttpStatus.BAD_REQUEST);
+            }
+        }catch (Exception e){
+            response.setMetadata("Respuesta KO", "-1", "Error al grabar categoria");
+            return new ResponseEntity<CategoryResponseRest>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        return new ResponseEntity<CategoryResponseRest>(response, HttpStatus.OK);
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<CategoryResponseRest> update(Category category, Long id) {
+
+        CategoryResponseRest response = new CategoryResponseRest();
+        List<Category> list = new ArrayList<>();
+
+        try{
+            Optional<Category> categorySearch = categoryDao.findById(id);
+            if (categorySearch.isPresent()) {
+                //se proceder a actualizar el registro
+
+                //seteo lo valores al objeto categorySearch que han llegado por parametro (nombre y description)
+                categorySearch.get().setName(category.getName());
+                categorySearch.get().setDescription(category.getDescription());
+
+                Category categoryToUpdate = categoryDao.save(categorySearch.get());
+
+                if (categoryToUpdate != null){
+                    list.add(categoryToUpdate);
+                    response.getCategoryResponse().setCategory(list);
+                    response.setMetadata("Respuesta OK", "00", "Categoria Actualizada");
+                }else{
+                    response.setMetadata("Respuesta KO", "-1", "Categoria no Actualizada");
+                    return new ResponseEntity<CategoryResponseRest>(response, HttpStatus.BAD_REQUEST);
+                }
+            }else{
+                response.setMetadata("Respueta KO", "-1", "Categoria no encontrada para actualizar");
+                return new ResponseEntity<CategoryResponseRest>(response, HttpStatus.NOT_FOUND);
+            }
+
+        }catch (Exception e){
+            response.setMetadata("Respuesta KO", "-1", "Error al actualizar categoria");
+            return new ResponseEntity<CategoryResponseRest>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        return new ResponseEntity<CategoryResponseRest>(response, HttpStatus.OK);
+    }
+
+    /**
+     *
+     * @param id
+     * @return
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<CategoryResponseRest> deleteById(Long id) {
+
+        CategoryResponseRest response = new CategoryResponseRest();
+
+        try{
+            categoryDao.deleteById(id);
+            response.setMetadata("Respuesta OK", "00", "Registro Eliminado");
+        }catch (Exception e){
+            response.setMetadata("Respuesta KO", "-1", "Error al eliminar");
+            return new ResponseEntity<CategoryResponseRest>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        return new ResponseEntity<CategoryResponseRest>(response, HttpStatus.OK);
+    }
 }

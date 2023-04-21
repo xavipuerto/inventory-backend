@@ -8,6 +8,7 @@ import java.util.List;
 @Data
 public class CategoryResponse {
 
+    //responde una lista de categorias
     private List<Category> category;
 
 }
