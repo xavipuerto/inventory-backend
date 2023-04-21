@@ -75,6 +75,7 @@ public class ProductServiceImpl implements IProductService {
         return new ResponseEntity<ProductResponseRest>(response, HttpStatus.OK);
     }
 
+    //@Transactional es hacer el commit en bbdd o rollback
     @Override
     @Transactional (readOnly = true)
     public ResponseEntity<ProductResponseRest> searchById(Long id) {
@@ -205,10 +206,59 @@ public class ProductServiceImpl implements IProductService {
         return new ResponseEntity<ProductResponseRest>(response, HttpStatus.OK);
     }
 
+    //@Transactional es qué hacer, si commit o rollback
     @Override
+    @Transactional
     public ResponseEntity<ProductResponseRest> update(Product product, Long categoryId, Long id) {
+        ProductResponseRest response = new ProductResponseRest();
+        List<Product> list = new ArrayList<>();
+
+        try{
+
+            //busco la nueva categoria donde quiero que se actuace el producto
+            Optional<Category> category = categoryDao.findById(categoryId);
+
+            if (category.isPresent()){
+                product.setCategory(category.get());
+            }else{
+                response.setMetadata("Respuesta KO", "-1", "Categoria no encontrada para acualizar");
+                return new ResponseEntity<ProductResponseRest>(response, HttpStatus.NOT_FOUND);
+            }
+
+            //ahora actualizamos la categoria que vamos a actualizar
+            Optional<Product> productSearch = productDao.findById(id);
+
+            if (productSearch.isPresent()){
+                //se actualizara el producto
+                productSearch.get().setAccount(product.getAccount());
+                productSearch.get().setName(product.getName());
+                productSearch.get().setPrice(product.getPrice());
+                productSearch.get().setPicture(product.getPicture());
+                productSearch.get().setCategory(product.getCategory());
+
+                //con esto se guarda el producto en bbdd
+                Product productToUpdate = productDao.save(productSearch.get());
+
+                if (productToUpdate != null){
+                    list.add(productToUpdate);
+                    response.getProduct().setProducts(list);
+                    response.setMetadata("Respuesta OK", "00", "Producto guardado");
+                }else{
+                    response.setMetadata("Respuesta KO", "-1", "Producto no actualizado");
+                    return new ResponseEntity<ProductResponseRest>(response, HttpStatus.BAD_REQUEST);
+                }
 
 
-        return null;
+            }else{
+                response.setMetadata("Respuesta KO", "-1", "Producto no guardado");
+                return new ResponseEntity<ProductResponseRest>(response, HttpStatus.NOT_FOUND);
+            }
+
+        }catch (Exception e) {
+            e.getStackTrace();
+            response.setMetadata("Respuesta KO", "-1", "Error en la actualizacion de productos");
+        }
+
+        return new ResponseEntity<ProductResponseRest>(response, HttpStatus.OK);
     }
 }
